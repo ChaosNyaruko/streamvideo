@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head> <meta charset="UTF-8">
+        <title>Document</title>
+    </head>
+    <body>
+        <h1>{{ .Headline }}</h1>
+        <p> {{ .Body }} </p>
+        <!-- <video autoplay src="http://localhost:8080/video?name={{ .Name }}" controls></video> -->
+        <video autoplay src="/video?name={{ .Name }}" controls></video>
+    </body>
+</html>
+
