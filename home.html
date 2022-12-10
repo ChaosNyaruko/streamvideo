@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Welcome!</title>
+    </head>
+    <body>
+    {{range $val := .}}
+        <li><a href="/home?name={{ $val.Name }}"> {{ $val.Name }} </a></li>
+    {{end}}
+    </body>
+</html>

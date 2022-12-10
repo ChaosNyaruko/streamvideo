@@ -132,7 +132,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
+func _main() {
 
 	http.HandleFunc("/1.mp4", handler)
 	http.ListenAndServe(":8080", nil)

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -14,6 +16,10 @@ import (
 var tmplt *template.Template
 
 func runServer() {
+	http.HandleFunc("/player", playPage)
+	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
+	http.Handle("/", http.FileServer(http.Dir(".")))
+	http.HandleFunc("/list", homePage)
 	http.HandleFunc("/home", handlePage)
 	http.HandleFunc("/video", handleStream)
 	err := http.ListenAndServe(":8080", nil)
@@ -22,14 +28,58 @@ func runServer() {
 	}
 }
 
+func playPage(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Path)
+	p := "." + r.URL.Path
+	if p == "./player" {
+		p = "./static/player.html"
+	}
+	http.ServeFile(w, r, p)
+}
+
+func homePage(resp http.ResponseWriter, req *http.Request) {
+
+	dir := req.URL.Query().Get("dir")
+	if dir == "" {
+		dir = "Movies"
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		resp.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	dir = homeDir + dir
+	files := getAllMp4s(dir)
+	log.Println("all files: ", files)
+	type File struct {
+		Name string
+	}
+	var list []File
+	for _, file := range files {
+		list = append(list, File{file})
+	}
+	tmplt, err := template.ParseFiles("home.html")
+	if err != nil {
+		log.Fatalf("parse home.html err: %v", err)
+	}
+
+	if err := tmplt.Execute(resp, list); err != nil {
+		return
+	}
+}
+
 func handlePage(writer http.ResponseWriter, request *http.Request) {
 	if request.Method == "GET" {
 		tmplt, _ = template.ParseFiles("tutorial.html")
 		name := request.URL.Query().Get("name")
 		log.Println("home param: ", name)
+		if name == "" {
+			writer.WriteHeader(http.StatusUnprocessableEntity)
+			return
+		}
 		event := News{
-			Headline: "makeuseof.com has everything Tech",
-			Body:     "Visit MUO for anything technology related",
+			Headline: name,
+			Body:     "body?",
 			Name:     name,
 		}
 		err := tmplt.Execute(writer, event)
@@ -46,7 +96,6 @@ type News struct {
 }
 
 func main() {
-	fmt.Println("vim-go")
 	runServer()
 }
 
@@ -105,4 +154,22 @@ func handleStream(writer http.ResponseWriter, request *http.Request) {
 	} else {
 		log.Printf("f's stat err: %v", err)
 	}
+}
+
+func getAllMp4s(root string) []string {
+	var all []string
+	log.Println("get all mp4s...")
+	f := func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			log.Println(err)
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(info.Name(), ".mp4") {
+			fmt.Printf("%v %+v\n", path, info)
+			all = append(all, strings.TrimSuffix(path, ".mp4"))
+		}
+		return nil
+	}
+	filepath.Walk(root, f)
+	return all
 }
