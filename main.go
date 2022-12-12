@@ -132,15 +132,15 @@ func handleStream(writer http.ResponseWriter, request *http.Request) {
 			writer.Header().Add("Connection", "keep-alive")
 			writer.Header().Add("Keep-Alive", "timeout=5")
 			writer.WriteHeader(http.StatusPartialContent)
-			if chunksize < 10 {
-				buf := make([]byte, chunksize)
-				n, _ := f.ReadAt(buf, int64(start))
-				log.Printf("detect range: start: %v, size: %v, read: %d", start, chunksize, n)
-				writer.Write(buf[:n])
-				return
-			}
+			// if chunksize < 10 {
+			// 	buf := make([]byte, chunksize)
+			// 	n, _ := f.ReadAt(buf, int64(start))
+			// 	log.Printf("detect range: start: %v, size: %v, read: %d", start, chunksize, n)
+			// 	writer.Write(buf[:n])
+			// 	return
+			// }
 			_, _ = f.Seek(int64(start), 0)
-			_, _ = io.Copy(writer, f)
+			_, _ = io.CopyN(writer, f, int64(chunksize))
 		} else {
 			writer.Header().Add("Connection", "keep-alive")
 			writer.Header().Add("Keep-Alive", "timeout=5")
