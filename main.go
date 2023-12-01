@@ -15,14 +15,19 @@ import (
 
 var tmplt *template.Template
 
+func wrapStatic() http.Handler {
+	return http.FileServer(http.Dir("/Users/bill/Downloads"))
+}
+
 func runServer() {
 	http.HandleFunc("/player", playPage)
-	http.Handle("/static/", http.StripPrefix("/static", http.FileServer(http.Dir("./static"))))
+	prefix := "/static"
+	http.Handle("/static/", http.StripPrefix(prefix, wrapStatic()))
 	http.Handle("/", http.FileServer(http.Dir(".")))
 	http.HandleFunc("/list", homePage)
 	http.HandleFunc("/home", handlePage)
 	http.HandleFunc("/video", handleStream)
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":3000", nil)
 	if err != nil {
 		log.Fatalln("There's an error with the server:", err)
 	}
